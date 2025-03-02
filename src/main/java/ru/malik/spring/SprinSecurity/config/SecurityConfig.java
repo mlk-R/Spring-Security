@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -16,6 +17,7 @@ import ru.malik.spring.SprinSecurity.service.PersonDetailsService;
 
 @EnableWebSecurity
 @Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final PersonDetailsService personDetailsService;
@@ -24,13 +26,14 @@ public class SecurityConfig {
     public SecurityConfig(PersonDetailsService personDetailsService) {
         this.personDetailsService = personDetailsService;
     }
-    Chse
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/admin").hasRole("ADMIN")
                         .requestMatchers("/auth/login","/auth/registration", "/auth/register").permitAll() // Разрешаем всем
-                        .anyRequest().permitAll() // Все остальные запросы требуют входа
+                        .anyRequest().hasAnyRole("USER", "ADMIN") // Все остальные запросы требуют входа
                 )
                 .formLogin(form -> form
                         .loginPage("/auth/login") // Страница логина

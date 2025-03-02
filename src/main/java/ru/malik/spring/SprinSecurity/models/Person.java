@@ -9,21 +9,27 @@ public class Person {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    int id;
+    private int id;
     @Column(name = "username")
-    String userName;
+    private String userName;
     @Column(name = "year_of_birth")
-    int yearOfBirth;
+    private int yearOfBirth;
     @Column(name = "password")
-    String password;
+    private String password;
+
+    @Column(name = "role")
+    private String role;
+
+
 
     public Person() {
     }
 
-    public Person(String userName, int yearOfBirth, String password) {
+    public Person(String userName, int yearOfBirth, String password, String role) {
         this.userName = userName;
         this.yearOfBirth = yearOfBirth;
         this.password = password;
+        this.role = role;
     }
 
     public int getId() {
@@ -56,6 +62,14 @@ public class Person {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 
     @Override
