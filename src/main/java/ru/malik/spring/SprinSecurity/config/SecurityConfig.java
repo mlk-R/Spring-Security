@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import ru.malik.spring.SprinSecurity.service.PersonDetailsService;
 
 @EnableWebSecurity
@@ -21,10 +22,12 @@ import ru.malik.spring.SprinSecurity.service.PersonDetailsService;
 public class SecurityConfig {
 
     private final PersonDetailsService personDetailsService;
+    private final JWTFilter jwtFilter;
 
     @Autowired
-    public SecurityConfig(PersonDetailsService personDetailsService) {
+    public SecurityConfig(PersonDetailsService personDetailsService, JWTFilter jwtFilter) {
         this.personDetailsService = personDetailsService;
+        this.jwtFilter = jwtFilter;
     }
 
     @Bean
@@ -48,7 +51,11 @@ public class SecurityConfig {
                 .invalidateHttpSession(true) // Инвалидация сессии
                 .deleteCookies("JSESSIONID") // Удаление куки
                 .permitAll()
-        );
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+        .csrf(csrf -> csrf.disable());
+
+
         return http.build();
     }
 

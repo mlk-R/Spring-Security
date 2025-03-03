@@ -1,28 +1,40 @@
 package ru.malik.spring.SprinSecurity.controllers;
 
 import jakarta.validation.Valid;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import ru.malik.spring.SprinSecurity.dto.AuthenticationDTO;
+import ru.malik.spring.SprinSecurity.dto.PersonDTO;
 import ru.malik.spring.SprinSecurity.models.Person;
+import ru.malik.spring.SprinSecurity.security.JWTUtil;
 import ru.malik.spring.SprinSecurity.service.RegistrationService;
 import ru.malik.spring.SprinSecurity.util.PersonValidator;
 
-@Controller
+import java.util.Map;
+
+
+@RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final RegistrationService registrationService;
     private final PersonValidator personValidator;
+    private final JWTUtil jwtUtil;
+    private final ModelMapper modelMapper;
+    private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public AuthController(RegistrationService registrationService, PersonValidator personValidator) {
+    public AuthController(RegistrationService registrationService, PersonValidator personValidator, JWTUtil jwtUtil, ModelMapper modelMapper, AuthenticationManager authenticationManager) {
         this.registrationService = registrationService;
         this.personValidator = personValidator;
+        this.jwtUtil = jwtUtil;
+        this.modelMapper = modelMapper;
+        this.authenticationManager = authenticationManager;
     }
 
     @GetMapping("/login")
@@ -36,16 +48,38 @@ public class AuthController {
     }
 
     @PostMapping("/registration")
-    public String performRegistration(@ModelAttribute("person") @Valid Person person, BindingResult bindingResult) {
+    public Map<String, String> performRegistration(@RequestBody @Valid PersonDTO personDTO, BindingResult bindingResult) {
+
+        Person person = convertPersonDTOtoPerson(personDTO);
 
         personValidator.validate(person, bindingResult);
 
         if (bindingResult.hasErrors()) {
-            return "auth/registration";
+            return Map.of("message", "Error!");
         }
 
         registrationService.register(person);
 
-        return "redirect:/auth/login";
+        String token = jwtUtil.generateJWTToken(person.getUserName());
+        return Map.of("token", token);
+    }
+
+    @PostMapping("login")
+    public Map<String, String> performLogin(@RequestBody AuthenticationDTO authenticationDTO) {
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(authenticationDTO.getUsername(), authenticationDTO.getPassword());
+
+        try {
+            authenticationManager.authenticate(authenticationToken);
+        } catch (BadCredentialsException e) {
+            return Map.of("message", "Bad credentials!");
+        }
+
+        String token = jwtUtil.generateJWTToken(authenticationDTO.getUsername());
+        return Map.of("token", token);
+    }
+
+    public Person convertPersonDTOtoPerson(PersonDTO personDTO) {
+        return modelMapper.map(personDTO, Person.class);
     }
 }
